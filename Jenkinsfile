@@ -28,6 +28,7 @@ pipeline {
                 sh 'scp main laborant@target:~'
             }
         }
+    }    
 
 
         

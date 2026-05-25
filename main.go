@@ -13,12 +13,10 @@ type Simple struct {
     Url         string
 }
 
-// 1. Extract the logic into this new factory function
 func SimpleFactory(host string) Simple {
-    return Simple{"Hello", "student", host}
+    return Simple{"Hello", "World", host}
 }
 
-// 2. Update the handler to use the factory
 func handler(w http.ResponseWriter, r *http.Request) {
     simple := SimpleFactory(r.Host)
 

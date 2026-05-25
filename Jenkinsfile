@@ -25,4 +25,3 @@ pipeline {
     }
 }
 
-// Triggering lab verification

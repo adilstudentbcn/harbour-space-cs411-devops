@@ -13,8 +13,14 @@ type Simple struct {
     Url         string
 }
 
+// 1. Extract the logic into this new factory function
+func SimpleFactory(host string) Simple {
+    return Simple{"Hello", "student", host}
+}
+
+// 2. Update the handler to use the factory
 func handler(w http.ResponseWriter, r *http.Request) {
-    simple := Simple{"Hello", "student", r.Host}
+    simple := SimpleFactory(r.Host)
 
     jsonOutput, _ := json.Marshal(simple)
 

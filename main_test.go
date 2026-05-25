@@ -8,4 +8,7 @@ func TestSimpleFactory(t *testing.T) {
     if f.Url != "http://localhost" {
         t.Errorf("feature incorrect, got %s, want: %s", f.Url, "http://localhost")
     }
+    if f.Url != "" {
+        t.Errorf("expected empty URL for empty host, got %s", f.Url)
+    }
 }

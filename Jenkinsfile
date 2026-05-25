@@ -34,6 +34,7 @@ pipeline {
                     mkdir -p ~/.ssh
                     ssh-keyscan -H target >> ~/.ssh/known_hosts
                     scp -i $SSH_KEY main $SSH_USER@target:~
+                    ssh -i $SSH_KEY $SSH_USER@target 'sudo systemctl restart main.service'
                     '''
                 }
             }

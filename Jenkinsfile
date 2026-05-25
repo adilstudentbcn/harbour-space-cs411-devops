@@ -33,8 +33,15 @@ pipeline {
                     sh '''
                     mkdir -p ~/.ssh
                     ssh-keyscan -H target >> ~/.ssh/known_hosts
+                    
+                    # 1. Stop the running service to unlock the file
+                    ssh -i $SSH_KEY $SSH_USER@target 'sudo systemctl stop main.service'
+                    
+                    # 2. Safely copy the new binary
                     scp -i $SSH_KEY main $SSH_USER@target:~
-                    ssh -i $SSH_KEY $SSH_USER@target 'sudo systemctl restart main.service'
+                    
+                    # 3. Start the service back up
+                    ssh -i $SSH_KEY $SSH_USER@target 'sudo systemctl start main.service'
                     '''
                 }
             }

@@ -15,14 +15,11 @@ pipeline {
             }
         }
         stage('Deploy to Docker VM') {
+            agent { label 'docker' }
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'target-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
-                    sh '''
-                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@docker "docker pull ${IMAGE}"
-                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@docker "docker rm -f myapp || true"
-                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@docker "docker run -d -p 4444:4444 --name myapp ${IMAGE}"
-                    '''
-                }
+                sh "docker pull ${IMAGE}"
+                sh "docker rm -f myapp || true"
+                sh "docker run -d -p 4444:4444 --name myapp ${IMAGE}"
             }
         }
     }

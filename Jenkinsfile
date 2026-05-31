@@ -15,11 +15,10 @@ pipeline {
             }
         }
         stage('Deploy to Docker VM') {
-            agent { label 'docker' }
             steps {
-                sh "docker pull ${IMAGE}"
-                sh "docker rm -f myapp || true"
-                sh "docker run -d -p 4444:4444 --name myapp ${IMAGE}"
+                sh "ssh -o StrictHostKeyChecking=no docker 'docker pull ${IMAGE}'"
+                sh "ssh -o StrictHostKeyChecking=no docker 'docker rm -f myapp || true'"
+                sh "ssh -o StrictHostKeyChecking=no docker 'docker run -d -p 4444:4444 --name myapp ${IMAGE}'"
             }
         }
     }

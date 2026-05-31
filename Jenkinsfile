@@ -1,16 +1,12 @@
+
 pipeline {
     agent any
 
-    triggers {
-        pollSCM('H/5 * * * *') 
-    }
-
     tools {
-       go "1.24.1"
+        go "1.24.1"
     }
 
     stages {
-        
         stage('Test') {
             steps {
                 sh "go test ./..."
@@ -19,7 +15,7 @@ pipeline {
         
         stage('Build') {
             steps {
-                sh "go build main.go"
+                sh "go build -o main main.go"
             }
         }
 

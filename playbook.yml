@@ -1,3 +1,4 @@
+
 # playbook.yml
 - hosts: all
   tasks:
@@ -20,6 +21,7 @@
       ansible.builtin.systemd:
         name: myapp.service
         daemon_reload: true
+        enabled: true
         state: started
 
   handlers:

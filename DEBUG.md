@@ -1,21 +1,24 @@
 
-## Hypotheses
-1. Incompatible glibc version (Most Likely): The Go binary was dynamically linked against a newer version of the `glibc` library on the Jenkins build machine, but the customer's older Ubuntu 18.04 VM only has an older version installed.
+1.Two ranked hypotheses for the root cause:
+ 
+Most likely: You built the app on your Mac, so it’s speaking "Apple Silicon" (ARM) language. But the server is a standard Intel/AMD (x86_64) machine. The server just can't read the format!
 
-2. Missing shared library: The binary is attempting to dynamically link, but the customer's system doesn't have the standard C library in the path it expects.
-
-
-
-## Verifications
-To prove this, I would run `ldd ./main` on the customer's machine. This command lists all the dynamic libraries the application requires to run. If it points to missing or older versions of `libc.so.6`, my hypothesis is correct.
+Less likely: Sometimes the app is looking for specific "helper" files on the server that aren't there or don't match the server's version of Linux.
 
 
-## The Fix
-I would rebuild the application using this command: 
-`CGO_ENABLED=0 go build -o main main.go`
+2.One verification step per hypothesis:
 
-`CGO_ENABLED=0` disables the use of C code and forces the Go compiler to create a 100% statically linked binary. It packs every single instruction it needs directly into the file, meaning it will never ask the customer's OS for `glibc`.
+To check the "language" issue: Run docker inspect ttl.sh/adilstudentbcn:2h | grep Architecture. If it says arm64, we know it’s the language mismatch.
+
+To check the "helper files" issue: Run docker run --rm ttl.sh/adilstudentbcn:2h ldd /app/main. If the list looks weird or errors out, we know it’s missing a file it needs.
 
 
-## The Lesson
-Go binaries dynamically link to standard system libraries like `glibc` by default, so you must explicitly compile them as statically linked if you want true portability across different Linux versions.
+3. The Fix:
+We need to tell the Go compiler to build the app for the server's language, not the laptop's. 
+We need to add  "instructions" to the build: CGO_ENABLED=0 GOOS=linux GOARCH=amd64.
+
+
+
+4. The lesson:
+It's good to remember that when you build a container, you aren't just saving your code—you’re saving a set of instructions written for a specific type of computer brain (the CPU). If the container’s "brain" doesn't match the server's "brain," it won't run.
+

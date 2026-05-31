@@ -1,38 +1,29 @@
 pipeline {
     agent any
-
-    triggers {
-        pollSCM('H/5 * * * *') 
+    environment {
+        IMAGE = "ttl.sh/adilstudentbcn:2h"
     }
-
-    tools {
-       go "1.24.1"
-    }
-
     stages {
-        
-        stage('Test') {
+        stage('Build Image') {
             steps {
-                sh "go test ./..."
+                sh "docker build -t ${IMAGE} ."
             }
         }
-        
-        stage('Build') {
+        stage('Push Image') {
             steps {
-                sh "go build main.go"
+                sh "docker push ${IMAGE}"
             }
         }
-
-        stage('Deploy') {
+        stage('Deploy to Docker VM') {
             steps {
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'target-ssh', 
-                    keyFileVariable: 'SSH_KEY', 
-                    usernameVariable: 'SSH_USER'
-                )]) {
-                    sh 'ansible-playbook -i hosts.ini --private-key=$SSH_KEY --user=$SSH_USER playbook.yml'
+                withCredentials([sshUserPrivateKey(credentialsId: 'docker-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
+                    sh '''
+                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@docker "docker pull ${IMAGE}"
+                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@docker "docker rm -f myapp || true"
+                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@docker "docker run -d -p 4444:4444 --name myapp ${IMAGE}"
+                    '''
                 }
             }
         }
-    }    
+    }
 }

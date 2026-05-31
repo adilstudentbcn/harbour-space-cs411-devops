@@ -16,9 +16,9 @@ pipeline {
         }
         stage('Deploy to Docker VM') {
             steps {
-                sh "ssh -o StrictHostKeyChecking=no docker 'docker pull ${IMAGE}'"
-                sh "ssh -o StrictHostKeyChecking=no docker 'docker rm -f myapp || true'"
-                sh "ssh -o StrictHostKeyChecking=no docker 'docker run -d -p 4444:4444 --name myapp ${IMAGE}'"
+                sh "ssh -o StrictHostKeyChecking=no laborant@docker 'docker pull ${IMAGE}'"
+                sh "ssh -o StrictHostKeyChecking=no laborant@docker 'docker rm -f myapp || true'"
+                sh "ssh -o StrictHostKeyChecking=no laborant@docker 'docker run -d -p 4444:4444 --name myapp ${IMAGE}'"
             }
         }
     }

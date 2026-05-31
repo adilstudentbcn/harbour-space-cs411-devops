@@ -1,0 +1,12 @@
+# main.service
+[Unit]
+Description=CS411 application
+After=network.target
+
+[Service]
+User=laborant
+ExecStart=/home/laborant/main
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

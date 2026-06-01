@@ -1,38 +1,25 @@
 pipeline {
     agent any
-
-    triggers {
-        pollSCM('H/5 * * * *') 
+    environment {
+        IMAGE = "ttl.sh/adilstudentbcn:2h"
     }
-
-    tools {
-       go "1.24.1"
-    }
-
     stages {
-        
-        stage('Test') {
+        stage('Build Image') {
             steps {
-                sh "go test ./..."
+                sh "docker build -t ${IMAGE} ."
             }
         }
-        
-        stage('Build') {
+        stage('Push Image') {
             steps {
-                sh "go build main.go"
+                sh "docker push ${IMAGE}"
             }
         }
-
-        stage('Deploy') {
+        stage('Deploy to Kubernetes') {
             steps {
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'target-ssh', 
-                    keyFileVariable: 'SSH_KEY', 
-                    usernameVariable: 'SSH_USER'
-                )]) {
-                    sh 'ansible-playbook -i hosts.ini --private-key=$SSH_KEY --user=$SSH_USER playbook.yml'
+                withCredentials([string(credentialsId: 'k8s-token', variable: 'K8S_TOKEN')]) {
+                    sh "kubectl --server=https://kubernetes:6443 --insecure-skip-tls-verify --token=$K8S_TOKEN apply -f deployment.yaml"
                 }
             }
         }
-    }    
+    }
 }

@@ -1,21 +1,25 @@
+ 
+Debugging Scenario: ImagePullBackOff
 
-## Hypotheses
-1. Incompatible glibc version (Most Likely): The Go binary was dynamically linked against a newer version of the `glibc` library on the Jenkins build machine, but the customer's older Ubuntu 18.04 VM only has an older version installed.
+ 1. Hypotheses
 
-2. Missing shared library: The binary is attempting to dynamically link, but the customer's system doesn't have the standard C library in the path it expects.
+ 	A: The Kubernetes worker nodes are running in a private network without public internet access, so they cannot reach the `ttl.sh` website even though the Jenkins server can.
 
+ 	B: The image on `ttl.sh` expired. Since it only lives for 2 hours, it might have been deleted between the time Jenkins pushed it and Kubernetes tried to pull it.
 
+ 2. Verification Steps
 
-## Verifications
-To prove this, I would run `ldd ./main` on the customer's machine. This command lists all the dynamic libraries the application requires to run. If it points to missing or older versions of `libc.so.6`, my hypothesis is correct.
+ To verify the network: Run kubectl run test-ping --image=alpine -- sh -c "ping -c 3 ttl.sh" to see if the cluster can actually connect to the website.
 
-
-## The Fix
-I would rebuild the application using this command: 
-`CGO_ENABLED=0 go build -o main main.go`
-
-`CGO_ENABLED=0` disables the use of C code and forces the Go compiler to create a 100% statically linked binary. It packs every single instruction it needs directly into the file, meaning it will never ask the customer's OS for `glibc`.
+ To verify expiration: Run kubectl describe pod myapp  to read the exact error message from the Kubernetes engine.
 
 
-## The Lesson
-Go binaries dynamically link to standard system libraries like `glibc` by default, so you must explicitly compile them as statically linked if you want true portability across different Linux versions.
+ 3. The Fix
+
+Instead of putting the image on a public website, upload it to a private storage area that Kubernetes servers already have permission to access. 
+
+
+ 4. Lesson
+
+Just because Jenkins can download the image doesn't mean Kubernetes can. Jenkins has its own internet connection, but the Kubernetes servers are completely separate computers—they need their own network rules and permissions to talk to that same registry. 
+

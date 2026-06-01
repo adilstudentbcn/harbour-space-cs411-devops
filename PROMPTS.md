@@ -1,16 +1,20 @@
-# Session Log: Q&A
 
-**Why was the deployment failing with "Permission denied" at the beginning?**
-The deployment failed because the Jenkins service, which runs the pipeline, did not have the correct SSH identity to connect to the Docker VM. Even though you had access as the 'laborant' user, Jenkins needed its own authorized access, which required us to manually add the SSH private key to the Jenkins global credentials vault and configure the pipeline to use it during the deployment step.
+1.  Why did my Jenkins pipeline fail with `ERROR: Could not find credentials entry with ID 'target-ssh'` right after I pushed my Kubernetes code?
+    Jenkins checked out the old `main` branch instead of the new `challenge/deploy-to-kubernetes` branch. Because this is a fresh playground, it didn't have the old SSH keys from previous challenges, causing the crash. You need to manually select the correct branch in the Jenkins UI.
 
-**Why did the pipeline freeze when we first tried to deploy to the docker VM?**
-The pipeline froze because we used the agent { label 'docker' } directive, which instructed Jenkins to wait for a specific worker node named "docker" to become available. However, that node was not registered or active in the Jenkins system. Because the pipeline was programmed to wait indefinitely for that specific machine to report for duty, it simply sat there in a "pending" state forever.
+2.  Why did I get a `Forbidden: pod updates may not change fields` error when I tried to add resource limits to my running Pod?
+    Kubernetes locks in the physical resource constraints of a pod once it is running, so you cannot hot-swap memory limits on a live pod. You must delete the existing pod using `kubectl delete pod myapp --ignore-not-found=true` before applying the new manifest.
 
-**What did we forget in the Jenkinsfile that caused the deployment to error out?**
-We forgot to specify the correct SSH user in the deployment command. Initially, Jenkins tried to connect as the user jenkins@docker, which did not have the necessary permissions. Once we updated the command to use laborant@docker, Jenkins was able to successfully authenticate and execute the commands on the VM.
+3.  Why did my pipeline suddenly fail with `error: You must be logged in to the server (Unauthorized)` when deploying to Kubernetes?
+    The Kubernetes security token generated for the `jenkins-robot` service account expired. Modern Kubernetes tokens are temporary and usually expire after 1 hour. You need to generate a new token and update it in the Jenkins Credentials vault.
 
-**Why did we decide to skip the HEALTHCHECK task to make things easier?**
-We decided to skip the HEALTHCHECK task because it was unnecessarily complex for this environment. Since we were using a scratch base image (which is completely empty and lacks standard tools like curl or wget), adding a health check would have required writing and compiling extra Go code just to monitor the container, which would have increased the build complexity and maintenance effort without significantly adding to the core project goal.
+4.  If Jenkins can pull the `ttl.sh` image successfully, why does Kubernetes fail with an `ImagePullBackOff`?
+    Jenkins and Kubernetes are different computers on potentially different networks. Jenkins pulling the image just proves the CI/CD server has internet access. The Kubernetes worker node might be behind a strict firewall or lack public internet routing, preventing it from reaching `ttl.sh`.
 
-**What was the main reason our build failed on the server but worked on my laptop?**
-The main reason was an architecture mismatch known as an "exec format error." Your laptop uses an Apple Silicon (ARM64) processor, while the Docker VM uses an Intel/AMD (x86_64) processor. When you built the binary, it was compiled with the specific machine-language instructions for your laptop's CPU, which the VM could not understand. By adding GOOS=linux and GOARCH=amd64 to your build command, you ensured the binary was compiled specifically for the server's CPU architecture instead.
+5.  What is the difference between Liveness and Readiness probes, and why aren't they redundant?
+    A Liveness Probe checks if the application is frozen; if it fails, Kubernetes kills and restarts the pod. A Readiness Probe checks if the application is ready to receive network traffic (e.g., done loading a database). An app can be "alive" but not "ready", which is why both are needed.
+
+6.  What goes wrong if you don't set memory requests vs. if you don't set limits for a Pod?
+    If neither are set, the pod can consume unlimited CPU/memory, potentially crashing the entire worker node (the "noisy neighbor" problem). If only limits are set (without requests), the pod has a maximum budget but no guaranteed baseline; if the server becomes crowded, Kubernetes will randomly kill this pod first to save space.
+
+

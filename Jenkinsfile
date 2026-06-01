@@ -14,14 +14,10 @@ pipeline {
                 sh "docker push ${IMAGE}"
             }
         }
-        stage('Deploy to Docker VM') {
+        stage('Deploy to Kubernetes') {
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'docker-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
-                    sh '''
-                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@docker "docker pull ${IMAGE}"
-                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@docker "docker rm -f myapp || true"
-                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@docker "docker run -d -p 4444:4444 --name myapp ${IMAGE}"
-                    '''
+                withCredentials([string(credentialsId: 'k8s-token', variable: 'K8S_TOKEN')]) {
+                    sh "kubectl --server=https://kubernetes:6443 --insecure-skip-tls-verify --token=$K8S_TOKEN apply -f pod.yaml"
                 }
             }
         }

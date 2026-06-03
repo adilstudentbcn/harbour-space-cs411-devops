@@ -1,21 +1,22 @@
+DEBUG.md
+Challenge 5 
+1. Ranked Hypotheses
+Hypothesis 1 : The AWS Security Group is acting like a closed gate at the edge of the network. It isn't allowing outside traffic to reach port 4444, so the request gets "dropped" and never arrives, causing the laptop to wait forever.
 
-## Hypotheses
-1. Incompatible glibc version (Most Likely): The Go binary was dynamically linked against a newer version of the `glibc` library on the Jenkins build machine, but the customer's older Ubuntu 18.04 VM only has an older version installed.
+Hypothesis 2: The application itself is only listening to its own internal "loopback" address and can’t hear any requests coming from the outside world.
 
-2. Missing shared library: The binary is attempting to dynamically link, but the customer's system doesn't have the standard C library in the path it expects.
-
-
-
-## Verifications
-To prove this, I would run `ldd ./main` on the customer's machine. This command lists all the dynamic libraries the application requires to run. If it points to missing or older versions of `libc.so.6`, my hypothesis is correct.
-
-
-## The Fix
-I would rebuild the application using this command: 
-`CGO_ENABLED=0 go build -o main main.go`
-
-`CGO_ENABLED=0` disables the use of C code and forces the Go compiler to create a 100% statically linked binary. It packs every single instruction it needs directly into the file, meaning it will never ask the customer's OS for `glibc`.
+2. Verification Steps
+For Hypothesis 1: we can  check the "Inbound Rules" in the AWS Security Group settings for the EC2 instance. If there isn't a specific rule that allows TCP traffic on port 4444 from the outside world (0.0.0.0/0), that’s the problem.
 
 
-## The Lesson
-Go binaries dynamically link to standard system libraries like `glibc` by default, so you must explicitly compile them as statically linked if you want true portability across different Linux versions.
+For Hypothesis 2:  I will run netstat -tulpn | grep 4444. If the output shows 127.0.0.1:4444, it confirms the app is only listening locally and ignoring the internet.
+
+
+3. The Fix
+Fix for Hypothesis 1: Add an "Inbound Rule" in the AWS Security Group to allow port 4444 traffic from anywhere.
+Fix for Hypothesis 2: Change the application's configuration or code so that it binds to 0.0.0.0 instead of just 127.0.0.1 .
+
+
+4. The Underlying Lesson
+A "Connection Refused" means your request reached the server and was rejected . A "Hang/Timeout" means your request disappeared because the Security Group silently dropped it before it could ever reach the destination.
+

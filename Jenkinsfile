@@ -1,38 +1,24 @@
 pipeline {
     agent any
-
-    triggers {
-        pollSCM('H/5 * * * *') 
+    environment {
+        TARGET_IP   = '13.60.54.247'
+        TARGET_USER = 'ubuntu'
+        APP_NAME    = 'myapp'
     }
-
-    tools {
-       go "1.24.1"
-    }
-
     stages {
-        
-        stage('Test') {
-            steps {
-                sh "go test ./..."
-            }
-        }
-        
         stage('Build') {
             steps {
-                sh "go build main.go"
+                sh "go build -o ${APP_NAME} ."
             }
         }
-
         stage('Deploy') {
             steps {
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'target-ssh', 
-                    keyFileVariable: 'SSH_KEY', 
-                    usernameVariable: 'SSH_USER'
-                )]) {
-                    sh 'ansible-playbook -i hosts.ini --private-key=$SSH_KEY --user=$SSH_USER playbook.yml'
+                withCredentials([sshUserPrivateKey(credentialsId: 'aws-ec2-key', keyFileVariable: 'SSH_KEY')]) {
+                    // Copy to /tmp first, then move with sudo to ensure permissions are handled
+                    sh "scp -o StrictHostKeyChecking=no -i ${SSH_KEY} ${APP_NAME} ${TARGET_USER}@${TARGET_IP}:/tmp/"
+                    sh "ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${TARGET_USER}@${TARGET_IP} 'mv /tmp/${APP_NAME} /home/${TARGET_USER}/${APP_NAME} && chmod +x /home/${TARGET_USER}/${APP_NAME} && nohup /home/${TARGET_USER}/${APP_NAME} > app.log 2>&1 &'"
                 }
             }
         }
-    }    
+    }
 }

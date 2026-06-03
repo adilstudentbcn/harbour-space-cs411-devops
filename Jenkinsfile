@@ -13,9 +13,9 @@ pipeline {
         }
         stage('Deploy') {
             steps {
-                sshagent(['aws-ec2-key']) {
-                    sh "scp -o StrictHostKeyChecking=no ${APP_NAME} ${TARGET_USER}@${TARGET_IP}:/home/${TARGET_USER}/"
-                    sh "ssh -o StrictHostKeyChecking=no ${TARGET_USER}@${TARGET_IP} './${APP_NAME} &'"
+                withCredentials([sshUserPrivateKey(credentialsId: 'aws-ec2-key', keyFileVariable: 'SSH_KEY')]) {
+                    sh "scp -o StrictHostKeyChecking=no -i ${SSH_KEY} ${APP_NAME} ${TARGET_USER}@${TARGET_IP}:/home/${TARGET_USER}/"
+                    sh "ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${TARGET_USER}@${TARGET_IP} 'chmod +x ${APP_NAME} && ./${APP_NAME} &'"
                 }
             }
         }

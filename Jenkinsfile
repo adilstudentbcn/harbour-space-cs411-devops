@@ -14,9 +14,9 @@ pipeline {
         stage('Deploy') {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'aws-ec2-key', keyFileVariable: 'SSH_KEY')]) {
-                    sh "scp -o StrictHostKeyChecking=no -i ${SSH_KEY} ${APP_NAME} ${TARGET_USER}@${TARGET_IP}:/home/${TARGET_USER}/"
-                    // The 'nohup' and redirecting outputs allow the process to live on independently
-                    sh "ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${TARGET_USER}@${TARGET_IP} 'chmod +x ${APP_NAME} && nohup ./${APP_NAME} > app.log 2>&1 &'"
+                    // Copy to /tmp first, then move with sudo to ensure permissions are handled
+                    sh "scp -o StrictHostKeyChecking=no -i ${SSH_KEY} ${APP_NAME} ${TARGET_USER}@${TARGET_IP}:/tmp/"
+                    sh "ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ${TARGET_USER}@${TARGET_IP} 'mv /tmp/${APP_NAME} /home/${TARGET_USER}/${APP_NAME} && chmod +x /home/${TARGET_USER}/${APP_NAME} && nohup /home/${TARGET_USER}/${APP_NAME} > app.log 2>&1 &'"
                 }
             }
         }

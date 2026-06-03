@@ -1,25 +1,22 @@
- 
-Debugging Scenario: ImagePullBackOff
+DEBUG.md
+Challenge 5 
+1. Ranked Hypotheses
+Hypothesis 1 : The AWS Security Group is acting like a closed gate at the edge of the network. It isn't allowing outside traffic to reach port 4444, so the request gets "dropped" and never arrives, causing the laptop to wait forever.
 
- 1. Hypotheses
+Hypothesis 2: The application itself is only listening to its own internal "loopback" address and can’t hear any requests coming from the outside world.
 
- 	A: The Kubernetes worker nodes are running in a private network without public internet access, so they cannot reach the `ttl.sh` website even though the Jenkins server can.
-
- 	B: The image on `ttl.sh` expired. Since it only lives for 2 hours, it might have been deleted between the time Jenkins pushed it and Kubernetes tried to pull it.
-
- 2. Verification Steps
-
- To verify the network: Run kubectl run test-ping --image=alpine -- sh -c "ping -c 3 ttl.sh" to see if the cluster can actually connect to the website.
-
- To verify expiration: Run kubectl describe pod myapp  to read the exact error message from the Kubernetes engine.
+2. Verification Steps
+For Hypothesis 1: we can  check the "Inbound Rules" in the AWS Security Group settings for the EC2 instance. If there isn't a specific rule that allows TCP traffic on port 4444 from the outside world (0.0.0.0/0), that’s the problem.
 
 
- 3. The Fix
-
-Instead of putting the image on a public website, upload it to a private storage area that Kubernetes servers already have permission to access. 
+For Hypothesis 2:  I will run netstat -tulpn | grep 4444. If the output shows 127.0.0.1:4444, it confirms the app is only listening locally and ignoring the internet.
 
 
- 4. Lesson
+3. The Fix
+Fix for Hypothesis 1: Add an "Inbound Rule" in the AWS Security Group to allow port 4444 traffic from anywhere.
+Fix for Hypothesis 2: Change the application's configuration or code so that it binds to 0.0.0.0 instead of just 127.0.0.1 .
 
-Just because Jenkins can download the image doesn't mean Kubernetes can. Jenkins has its own internet connection, but the Kubernetes servers are completely separate computers—they need their own network rules and permissions to talk to that same registry. 
+
+4. The Underlying Lesson
+A "Connection Refused" means your request reached the server and was rejected . A "Hang/Timeout" means your request disappeared because the Security Group silently dropped it before it could ever reach the destination.
 

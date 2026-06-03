@@ -1,20 +1,22 @@
+Challenge 5  prompts 
 
-1.  Why did my Jenkins pipeline fail with `ERROR: Could not find credentials entry with ID 'target-ssh'` right after I pushed my Kubernetes code?
-    Jenkins checked out the old `main` branch instead of the new `challenge/deploy-to-kubernetes` branch. Because this is a fresh playground, it didn't have the old SSH keys from previous challenges, causing the crash. You need to manually select the correct branch in the Jenkins UI.
+What is the difference between a "Hang" and "Connection Refused"?
+ A "Connection Refused" means your data packet successfully reached the server, but the computer explicitly told you the door was locked (the port was closed). A "Hang" (or timeout) means your packet was silently dropped by a firewall, like a Security Group, before it ever reached the destination, so you never received an answer at all.
 
-2.  Why did I get a `Forbidden: pod updates may not change fields` error when I tried to add resource limits to my running Pod?
-    Kubernetes locks in the physical resource constraints of a pod once it is running, so you cannot hot-swap memory limits on a live pod. You must delete the existing pod using `kubectl delete pod myapp --ignore-not-found=true` before applying the new manifest.
 
-3.  Why did my pipeline suddenly fail with `error: You must be logged in to the server (Unauthorized)` when deploying to Kubernetes?
-    The Kubernetes security token generated for the `jenkins-robot` service account expired. Modern Kubernetes tokens are temporary and usually expire after 1 hour. You need to generate a new token and update it in the Jenkins Credentials vault.
+Why is 0.0.0.0/0 on Port 22 a security risk? 
+Setting Port 22 to 0.0.0.0/0 exposes your SSH service to the entire internet. This makes your instance a constant target for automated brute-force attacks where hackers try to guess your credentials or exploit the SSH service.
 
-4.  If Jenkins can pull the `ttl.sh` image successfully, why does Kubernetes fail with an `ImagePullBackOff`?
-    Jenkins and Kubernetes are different computers on potentially different networks. Jenkins pulling the image just proves the CI/CD server has internet access. The Kubernetes worker node might be behind a strict firewall or lack public internet routing, preventing it from reaching `ttl.sh`.
 
-5.  What is the difference between Liveness and Readiness probes, and why aren't they redundant?
-    A Liveness Probe checks if the application is frozen; if it fails, Kubernetes kills and restarts the pod. A Readiness Probe checks if the application is ready to receive network traffic (e.g., done loading a database). An app can be "alive" but not "ready", which is why both are needed.
+What is the benefit of using Instance Connect? 
+Instance Connect provides a secure way to access your instance directly through the AWS Console. This removes the "administrative bottleneck" of having to constantly update your Security Group inbound rules every time your home or school network IP address changes.
 
-6.  What goes wrong if you don't set memory requests vs. if you don't set limits for a Pod?
-    If neither are set, the pod can consume unlimited CPU/memory, potentially crashing the entire worker node (the "noisy neighbor" problem). If only limits are set (without requests), the pod has a maximum budget but no guaranteed baseline; if the server becomes crowded, Kubernetes will randomly kill this pod first to save space.
+
+What is the difference between "Stopping" and "Terminating" an instance? 
+"Stopping" an instance is like powering off your laptop; the machine shuts down, but your data remains on the disk so you can "Start" it again later. "Terminating" is a permanent delete action that wipes the instance and its storage entirely from your account.
+
+
+Why must the app bind to 0.0.0.0 instead of 127.0.0.1? 
+If an app binds to 127.0.0.1 (localhost), it is only listening to itself, like an office worker wearing noise-canceling headphones. Binding to 0.0.0.0 allows the app to "hear" and accept traffic coming from any network interface, which is required for it to be accessible from the outside world.
 
 
